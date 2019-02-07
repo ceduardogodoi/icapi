@@ -1,0 +1,51 @@
+version: '3.4'
+services:
+  service:
+    image: nexus.condor.com.br/app/marketing_printer_impressao-cartaz-api:latest
+    restart: always
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+      labels:
+        traefik.port: "8080"
+        traefik.frontend.rule: "Host:islv2.condor.com.br,islv.condor.com.br,docker.condor.com.br;PathPrefix: /api-rc/marketing/printer/impressao-cartaz/"
+        traefik.docker.network: "traefik-network"
+      placement:
+        constraints:
+          - node.role != manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    environment:
+      - CONFIG=--spring.profiles.active=production --oracle.host=oraprod-scan.condor.com.br --oracle.sn=pcondor --rmq.username=admin --rmq.password=admin --rmq.host=rabbitmq-1 --rmq.hostport=rabbitmq-1:5672,rabbitmq-2:5672
+    volumes: 
+      - mkt:/mkt
+    networks:
+      - traefik-network
+      - rmq-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api-rc/marketing/printer/impressao-cartaz/actuator/health"]
+      interval: 3m
+      timeout: 10s
+      retries: 3
+      start_period: 1s
+
+networks:
+  traefik-network:
+    external:
+      name: traefik-network
+  rmq-network:
+    external:
+      name: rmq-network
+
+volumes:
+  mkt:
+    name: share.mkt

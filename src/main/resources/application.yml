@@ -1,0 +1,63 @@
+version: '@project.version@'
+
+project:
+  path: ${path.share.mkt:/mkt}
+
+server:
+  main:
+    banner-mode: "off"
+  port: ${conf.port:8080}
+  servlet:
+    context-path: ${conf.context:/api-rc/marketing/printer/impressao-cartaz}
+
+spring:
+  main:
+    banner-mode: "off"
+  rabbitmq:
+    host: ${rmq.host:localhost}
+    port: ${rmq.port:5672}
+    hostport: ${rmq.hostport:localhost:5672}
+    exchange: logs.exchange
+    routing: log-routing
+    username: ${rmq.username:guest}
+    password: ${rmq.password:guest}
+  application:
+    name: '@project.groupId@-@project.artifactId@'
+    version: '@project.version@'
+    node:
+      uid: ${node.uid:0}
+      slot: ${node.slot:0}
+  profiles:
+    active: dev
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:oracle:thin:@(description=(address_list=(load_balance=on)(failover=on)(address=(protocol=tcp)(host=${oracle.host:10.1.2.4})(port=${oracle.port:1521})))(connect_data=(service_name=${oracle.sn:dcondor})(failover_mode=(type=select)(method=basic))))
+    username: ${oracle.username:appcondor}
+    password: ${oracle.password:appcondor}
+  jpa:
+    database-platform: org.hibernate.dialect.Oracle10gDialect
+    database: ORACLE
+    show-sql: false
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+
+management:
+  health:
+    rabbit:
+      enabled: ${spring.profiles.active=='production'?true:false}
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+keycloak:
+  realm: condor
+  realm-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlfBmFqaOubpZpYh/d+4eM+DAR2FTLVd4TahF8aqzZshUFwUm/7cOVrPoch9MFcRR9EKkQcdha8rr3aceAEKbab9/+76kfFrnpX0OahljdhLKw0vAuySM1193Iiw3iHhViLC+cnyR8b4ItJF8iu6nMuR41MuWxz7KbldU2c0mf8lhTOyAuMEFa1dL6jdKdcpnFQ8g7B6Acy8A1l7gtLvo/icSEY4hxup/O8fFC9mkVJgcW61VjsbJ3+Y3a9yMSTO2tMUdeTZIu3feXIhEvfxB+Vjh1NbWLCpridVS9lOwqJipzJkGZoTAy/h7U0B7YyTaBm8xTqICTicy4U7z0OI9cQIDAQAB
+  bearer-only: true
+  auth-server-url: https://auth.condor.com.br/auth
+  ssl-required: external
+  resource: springboot-microservice

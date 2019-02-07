@@ -1,0 +1,12 @@
+version: '3.4'
+services:
+  version:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: nexus.condor.com.br/app/marketing_printer_impressao-api:1.0.0
+  latest:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: nexus.condor.com.br/app/marketing_printer_impressao-cartaz-api:latest

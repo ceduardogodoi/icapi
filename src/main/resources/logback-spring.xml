@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<include resource="org/springframework/boot/logging/logback/defaults.xml" />
+	​
+	<springProperty scope="context" name="rmqHostPort" source="spring.rabbitmq.hostport" />
+	<springProperty scope="context" name="rmqExchange" source="spring.rabbitmq.exchange" />
+	<springProperty scope="context" name="rmqRouting" source="spring.rabbitmq.routing" />
+	<springProperty scope="context" name="rmqUsername" source="spring.rabbitmq.username" />
+	<springProperty scope="context" name="rmqPassword" source="spring.rabbitmq.password" />
+
+	<springProperty scope="context" name="appName" source="spring.application.name" />
+	<springProperty scope="context" name="appVersion" source="spring.application.version" />
+	<springProperty scope="context" name="appNodeUID" source="spring.application.node.uid" />
+	<springProperty scope="context" name="appNodeSlot" source="spring.application.node.slot" />
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>
+				%d{yyyy-MM-dd'T'HH:mm:ss}|%-10.10X{X-B3-TraceId:-}|%-10.10X{X-B3-SpanId:-}|%-10.10X{X-B3-ParentSpanId:-}|%-10.10X{X-B3-Span-Export:-}|[%-23.23thread]|%-5level|%-60.60logger{60}|%msg%n
+			</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="STDOUT-DEV" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>
+				%d{yyyy-MM-dd'T'HH:mm:ss}|[%thread]|%-5level|%-60.60logger{60}|%msg%n
+			</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="REMOTE" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+		<encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+				</timestamp>
+				<version>${appVersion:-}</version>
+				<pattern>
+					<pattern>
+						{
+						"severity": "%level",
+						"service": "${appName:-}",
+						"node.uid": "${appNodeUID}",
+						"node.slot": "${appNodeSlot}",
+						"version": "${appVersion:-}",
+						"trace": "%X{X-B3-TraceId:-}",
+						"span":
+						"%X{X-B3-SpanId:-}",
+						"parent": "%X{X-B3-ParentSpanId:-}",
+						"exportable": "%X{X-Span-Export:-}",
+						"pid": "${PID:-}",
+						"thread": "%thread",
+						"logger": "%logger",
+						"message": "%message",
+						"error": "%ex"
+						}
+					</pattern>
+				</pattern>
+			</providers>
+		</encoder>
+
+		<addresses>${rmqHostPort}</addresses>
+		<virtualHost>/</virtualHost>
+
+		<username>${rmqUsername}</username>
+		<password>${rmqPassword}</password>
+
+		<applicationId>${appName}</applicationId>
+		<exchangeName>${rmqExchange}</exchangeName>
+		<routingKeyPattern>${rmqRouting}</routingKeyPattern>
+		<generateId>true</generateId>
+		<charset>UTF-8</charset>
+		<durable>true</durable>
+		<deliveryMode>PERSISTENT</deliveryMode>
+		<declareExchange>true</declareExchange>
+		<contentType>text/json</contentType>
+		<maxSenderRetries>2</maxSenderRetries>
+	</appender>
+
+	<springProfile name="production">
+		<root level="INFO">
+			<appender-ref ref="REMOTE" />
+			<appender-ref ref="STDOUT" />
+		</root>
+	</springProfile>
+	<springProfile name="!production">
+		<logger name="br.com.condor" level="TRACE" />
+		<logger name="br.com.condor.core" level="INFO" />
+
+		<root level="INFO">
+			<appender-ref ref="STDOUT-DEV" />
+		</root>
+	</springProfile>
+</configuration>
